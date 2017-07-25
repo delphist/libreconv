@@ -6,17 +6,18 @@ require "spoon"
 
 module Libreconv
 
-  def self.convert(source, target, soffice_command = nil, convert_to = nil)
-    Converter.new(source, target, soffice_command, convert_to).convert
+  def self.convert(source, target, soffice_command = nil, convert_to = nil, unique_process_id = nil)
+    Converter.new(source, target, soffice_command, convert_to, unique_process_id).convert
   end
 
   class Converter
     attr_accessor :soffice_command
 
-    def initialize(source, target, soffice_command = nil, convert_to = nil)
+    def initialize(source, target, soffice_command = nil, convert_to = nil, unique_process_id = nil)
       @source = source
       @target = target
       @soffice_command = soffice_command
+      @unique_process_id = unique_process_id
       @convert_to = convert_to || "pdf"
       determine_soffice_command
       check_source_type
@@ -37,7 +38,8 @@ module Libreconv
         @convert_to,
         @source,
         "--outdir",
-        @target
+        @target,
+        env_params
       )
 
       Process.waitpid(pid)
@@ -52,6 +54,11 @@ module Libreconv
 
       @soffice_command ||= which("soffice")
       @soffice_command ||= which("soffice.bin")
+    end
+
+    def env_params
+      return nil if @unique_process_id.nil?
+      "-env:UserInstallation=file:///tmp/libreconv_#{@unique_process_id}/"
     end
 
     def which(cmd)
